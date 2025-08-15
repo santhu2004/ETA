@@ -1,0 +1,31 @@
+{
+  "bad_issuers": [
+    "self-signed",
+    "self signed",
+    "malicious-ca",
+    "fake-certificate-authority",
+    "rogue-ca",
+    "compromised-ca"
+  ],
+  "bad_subjects": [
+    "*.malware.com",
+    "*.bot.net",
+    "*.spy.org",
+    "*.hack.me",
+    "*.steal.info",
+    "malware-update.com",
+    "command-control.com",
+    "backdoor-server.net",
+    "keylogger-update.org",
+    "ransomware-c2.com"
+  ],
+  "bad_patterns": [
+    ".*\\.malware\\..*",
+    ".*\\.bot\\..*",
+    ".*\\.spy\\..*",
+    ".*\\.hack\\..*",
+    ".*update.*\\.com",
+    ".*control.*\\.net",
+    ".*server.*\\.org"
+  ]
+}

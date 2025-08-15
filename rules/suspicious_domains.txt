@@ -1,0 +1,31 @@
+# Suspicious domain patterns for encrypted traffic analysis
+# These domains are commonly associated with malicious activity
+
+# Suspicious TLDs
+.xyz
+.top
+.tk
+.ml
+.ga
+.cf
+.gq
+.pw
+
+# Suspicious subdomain patterns
+update.
+sync.
+backup.
+admin.
+api.
+control.
+remote.
+command.
+shell.
+bot.
+malware.
+spy.
+steal.
+hack.
+crack.
+keylog.
+ransom.

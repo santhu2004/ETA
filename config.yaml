@@ -1,0 +1,50 @@
+# Encrypted Traffic Analysis Configuration
+
+# Network interface for packet capture
+interface: auto  # auto, eth0, wlan0, etc.
+
+# Block duration in seconds
+block_duration_seconds: 300
+
+# Operation mode: simulate (default) or enforce
+mode: simulate
+
+# Paths configuration
+paths:
+  outputs_dir: outputs
+  data_dir: outputs/data
+  logs_dir: outputs/logs
+  state_dir: outputs/state
+  exports_dir: outputs/exports
+  bad_ips: rules/bad_ips.txt
+  ja3_blacklist: rules/ja3_blacklist.json
+  suspicious_domains: rules/suspicious_domains.txt
+  cert_blacklist: rules/cert_blacklist.json
+
+# Analysis thresholds
+thresholds:
+  beacon_min_events: 4
+  beacon_max_jitter_ms: 2500
+  min_packet_size: 60
+  max_ttl: 64
+
+# Capture settings
+capture:
+  engine: auto  # auto, scapy, pyshark
+  filter: "tcp port 443 or tcp port 993 or tcp port 995"
+  buffer_size: 1000
+  timeout: 1.0
+
+# Logging settings
+logging:
+  level: INFO
+  max_file_size_mb: 100
+  backup_count: 5
+  cleanup_days: 30
+
+# Threat intelligence settings
+threat_intel:
+  update_interval_hours: 24
+  sources:
+    - "https://raw.githubusercontent.com/example/bad-ips/main/list.txt"
+    - "https://raw.githubusercontent.com/example/ja3-fingerprints/main/blacklist.json"

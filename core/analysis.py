@@ -78,17 +78,17 @@ class Analyzer:
     def _check_certificate_issues(self, packet_data: Dict) -> Optional[Tuple[str, str]]:
         """Check for suspicious certificate characteristics."""
         # Check issuer blacklist
-        issuer = packet_data.get("cert_issuer", "").lower()
-        if issuer in self.cert_blacklist.get("issuers", set()):
+        issuer = packet_data.get("cert_issuer", "")
+        if issuer and issuer.lower() in self.cert_blacklist.get("issuers", set()):
             return ("cert_blacklisted_issuer", f"Certificate issuer '{issuer}' is blacklisted")
         
         # Check subject blacklist
-        subject = packet_data.get("cert_subject", "").lower()
-        if subject in self.cert_blacklist.get("subjects", set()):
+        subject = packet_data.get("cert_subject", "")
+        if subject and subject.lower() in self.cert_blacklist.get("subjects", set()):
             return ("cert_blacklisted_subject", f"Certificate subject '{subject}' is blacklisted")
         
         # Check for self-signed certificates
-        if "self-signed" in issuer or "self signed" in issuer:
+        if issuer and ("self-signed" in issuer.lower() or "self signed" in issuer.lower()):
             return ("cert_self_signed", "Certificate issuer indicates self-signed certificate")
         
         # Check certificate expiration
@@ -176,11 +176,13 @@ class Analyzer:
         """Check for geographic anomalies (placeholder for future implementation)."""
         # This could be extended with GeoIP databases
         # For now, just check for private IP ranges in public traffic
-        src_ip = packet_data.get("src_ip", "")
-        dst_ip = packet_data.get("dst_ip", "")
-        
-        if self._is_private_ip(src_ip) and not self._is_private_ip(dst_ip):
-            return ("private_to_public", f"Private IP {src_ip} communicating with public IP {dst_ip}")
+        # Note: This is disabled by default as it flags normal internet usage
+        # Uncomment the lines below if you want to enable this check
+        # src_ip = packet_data.get("src_ip", "")
+        # dst_ip = packet_data.get("dst_ip", "")
+        # 
+        # if self._is_private_ip(src_ip) and not self._is_private_ip(dst_ip):
+        #     return ("private_to_public", f"Private IP {src_ip} communicating with public IP {dst_ip}")
         
         return None
 

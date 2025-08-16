@@ -1,7 +1,7 @@
 # Encrypted Traffic Analysis Configuration
 
 # Network interface for packet capture
-interface: auto  # auto, eth0, wlan0, etc.
+interface: Wi-Fi  # auto, eth0, wlan0, etc.
 
 # Block duration in seconds
 block_duration_seconds: 300
@@ -25,13 +25,13 @@ paths:
 thresholds:
   beacon_min_events: 4
   beacon_max_jitter_ms: 2500
-  min_packet_size: 60
+  min_packet_size: 40  # Reduced from 60 to avoid flagging normal TCP control packets
   max_ttl: 64
 
 # Capture settings
 capture:
-  engine: auto  # auto, scapy, pyshark
-  filter: "tcp port 443 or tcp port 993 or tcp port 995"
+  engine: pyshark  # auto, scapy, pyshark
+  filter: "tcp port 443 or tcp port 993 or tcp port 995 or tcp port 8443"
   buffer_size: 1000
   timeout: 1.0
 

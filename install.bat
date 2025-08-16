@@ -20,9 +20,10 @@ echo ========================================
 echo.
 echo To get started:
 echo 1. Activate the virtual environment: venv\Scripts\activate.bat
-echo 2. Generate test data: python -m cli.main simulate --count 50 --malicious-ratio 0.3
-echo 3. Run analysis: python -m cli.main capture --replay
-echo 4. View help: python -m cli.main --help
+echo 2. Clear any existing logs: python -m cli.main clear-logs
+echo 3. Generate test data: python -m cli.main simulate --count 50 --malicious-ratio 0.3
+echo 4. Run analysis: python -m cli.main capture --replay
+echo 5. View help: python -m cli.main --help
 echo.
 echo All outputs will be organized in the 'outputs/' directory:
 echo   - outputs/data/     (simulated flows and captured data)

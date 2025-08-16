@@ -236,26 +236,26 @@ class PySharkCapture:
         
         try:
             # Extract TLS information
-            if hasattr(packet, 'tls'):
+            if hasattr(packet, 'tls') and packet.tls:
                 tls = packet.tls
-                if hasattr(tls, 'handshake_extensions_server_name'):
-                    metadata['tls_sni'] = tls.handshake_extensions_server_name
-                if hasattr(tls, 'handshake_version'):
-                    metadata['tls_version'] = tls.handshake_version
-                if hasattr(tls, 'handshake_ciphersuite'):
-                    metadata['tls_cipher_suite'] = tls.handshake_ciphersuite
+                if hasattr(tls, 'handshake_extensions_server_name') and tls.handshake_extensions_server_name:
+                    metadata['tls_sni'] = str(tls.handshake_extensions_server_name)
+                if hasattr(tls, 'handshake_version') and tls.handshake_version:
+                    metadata['tls_version'] = str(tls.handshake_version)
+                if hasattr(tls, 'handshake_ciphersuite') and tls.handshake_ciphersuite:
+                    metadata['tls_cipher_suite'] = str(tls.handshake_ciphersuite)
             
             # Extract certificate information if available
-            if hasattr(packet, 'ssl'):
+            if hasattr(packet, 'ssl') and packet.ssl:
                 ssl = packet.ssl
-                if hasattr(ssl, 'handshake_cert_issuer'):
-                    metadata['cert_issuer'] = ssl.handshake_cert_issuer
-                if hasattr(ssl, 'handshake_cert_subject'):
-                    metadata['cert_subject'] = ssl.handshake_cert_subject
-                if hasattr(ssl, 'handshake_cert_validity_notafter'):
-                    metadata['cert_valid_to'] = ssl.handshake_cert_validity_notafter
-                if hasattr(ssl, 'handshake_cert_validity_notbefore'):
-                    metadata['cert_valid_from'] = ssl.handshake_cert_validity_notbefore
+                if hasattr(ssl, 'handshake_cert_issuer') and ssl.handshake_cert_issuer:
+                    metadata['cert_issuer'] = str(ssl.handshake_cert_issuer)
+                if hasattr(ssl, 'handshake_cert_subject') and ssl.handshake_cert_subject:
+                    metadata['cert_subject'] = str(ssl.handshake_cert_subject)
+                if hasattr(ssl, 'handshake_cert_validity_notafter') and ssl.handshake_cert_validity_notafter:
+                    metadata['cert_valid_to'] = str(ssl.handshake_cert_validity_notafter)
+                if hasattr(ssl, 'handshake_cert_validity_notbefore') and ssl.handshake_cert_validity_notbefore:
+                    metadata['cert_valid_from'] = str(ssl.handshake_cert_validity_notbefore)
                     
         except Exception as e:
             # Continue if TLS extraction fails
@@ -269,22 +269,22 @@ class PySharkCapture:
             metadata = PacketMetadata()
             
             # Basic packet information
-            if hasattr(packet, 'ip'):
-                metadata.src_ip = packet.ip.src
-                metadata.dst_ip = packet.ip.dst
-                metadata.ttl = int(packet.ip.ttl) if hasattr(packet.ip, 'ttl') else None
+            if hasattr(packet, 'ip') and packet.ip:
+                metadata.src_ip = str(packet.ip.src) if packet.ip.src else ""
+                metadata.dst_ip = str(packet.ip.dst) if packet.ip.dst else ""
+                metadata.ttl = int(packet.ip.ttl) if hasattr(packet.ip, 'ttl') and packet.ip.ttl else None
             
-            if hasattr(packet, 'tcp'):
+            if hasattr(packet, 'tcp') and packet.tcp:
                 metadata.protocol = "TCP"
-                metadata.src_port = int(packet.tcp.srcport)
-                metadata.dst_port = int(packet.tcp.dstport)
-                metadata.tcp_flags = packet.tcp.flags if hasattr(packet.tcp, 'flags') else None
-            elif hasattr(packet, 'udp'):
+                metadata.src_port = int(packet.tcp.srcport) if packet.tcp.srcport else 0
+                metadata.dst_port = int(packet.tcp.dstport) if packet.tcp.dstport else 0
+                metadata.tcp_flags = str(packet.tcp.flags) if hasattr(packet.tcp, 'flags') and packet.tcp.flags else None
+            elif hasattr(packet, 'udp') and packet.udp:
                 metadata.protocol = "UDP"
-                metadata.src_port = int(packet.udp.srcport)
-                metadata.dst_port = int(packet.udp.dstport)
+                metadata.src_port = int(packet.udp.srcport) if packet.udp.srcport else 0
+                metadata.dst_port = int(packet.udp.dstport) if packet.udp.dstport else 0
             
-            metadata.packet_size = int(packet.length) if hasattr(packet, 'length') else 0
+            metadata.packet_size = int(packet.length) if hasattr(packet, 'length') and packet.length else 0
             metadata.timestamp = datetime.utcnow()
             
             # Extract TLS metadata

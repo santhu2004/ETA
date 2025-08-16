@@ -257,8 +257,22 @@ def cmd_show_logs(args):
     table.add_column("Reason")
     table.add_column("Action")
     for rec in reversed(rows[-50:]):  # show last 50
-        table.add_row(rec["ts"], rec["src_ip"], rec.get("dst_ip",""), rec["indicator"], rec["reason"], rec["action"])
+        table.add_row(rec["timestamp"], rec["src_ip"], rec.get("dst_ip",""), rec["indicator"], rec["reason"], rec["action"])
     console.print(table)
+
+def cmd_clear_logs(args):
+    """Clear all logs and start fresh."""
+    cfg = load_config()
+    logger = EventLogger(cfg["paths"]["logs_dir"])
+    
+    # Ask for confirmation
+    if not Confirm.ask("Are you sure you want to clear all logs? This cannot be undone."):
+        console.print("[yellow]Operation cancelled.[/]")
+        return
+    
+    logger.clear_logs()
+    console.print("[green]✓ All logs cleared successfully![/]")
+    console.print("[dim]You can now start fresh with new captures.[/]")
 
 def cmd_unblock(args):
     cfg = load_config()
@@ -434,6 +448,9 @@ Examples:
 
     sl = sub.add_parser("show-logs", help="Show recent detections")
     sl.set_defaults(func=cmd_show_logs)
+
+    cl = sub.add_parser("clear-logs", help="Clear all logs and start fresh")
+    cl.set_defaults(func=cmd_clear_logs)
 
     ub = sub.add_parser("unblock", help="Unblock an IP (simulation state)")
     ub.add_argument("--ip", required=True)

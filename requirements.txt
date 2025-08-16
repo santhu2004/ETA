@@ -1,0 +1,15 @@
+# Core dependencies
+PyYAML>=6.0
+rich>=13.0.0
+python-dateutil>=2.8.2
+
+# Network capture and analysis
+scapy>=2.4.5
+pyshark>=0.6.0
+
+# System utilities
+psutil>=5.9.0
+
+# Development and testing (optional)
+pytest>=6.0
+pytest-cov>=2.0

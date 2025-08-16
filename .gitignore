@@ -206,6 +206,10 @@ config.local.yaml
 
 # Test outputs
 test_outputs/
+
+# Cleanup scripts (optional - can be kept for convenience)
+# cleanup.bat
+# cleanup.sh
 coverage/
 .coverage
 .pytest_cache/

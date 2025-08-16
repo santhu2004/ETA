@@ -321,6 +321,33 @@ class EventLogger:
                 "last_updated": datetime.utcnow().isoformat() + "Z"
             }
 
+    def clear_logs(self):
+        """Clear all logs and start fresh."""
+        try:
+            # Clear JSONL file
+            if os.path.exists(self.jsonl_path):
+                os.remove(self.jsonl_path)
+            
+            # Clear SQLite database
+            if os.path.exists(self.sqlite_path):
+                os.remove(self.sqlite_path)
+                self._init_sqlite()  # Reinitialize empty database
+            
+            # Clear summary
+            if os.path.exists(self.summary_path):
+                os.remove(self.summary_path)
+                self._init_summary()  # Reinitialize empty summary
+            
+            # Clear system log
+            log_file = os.path.join(self.logs_dir, "system.log")
+            if os.path.exists(log_file):
+                os.remove(log_file)
+            
+            self.logger.info("All logs cleared successfully")
+            
+        except Exception as e:
+            self.logger.error(f"Failed to clear logs: {e}")
+
     def export_detections(self, format: str = "json", filters: Dict = None) -> str:
         """Export detections in various formats."""
         detections = self.read_sqlite(filters=filters)

@@ -7,6 +7,23 @@ import os
 import sys
 import subprocess
 from pathlib import Path
+import platform
+
+
+def is_windows() -> bool:
+    return os.name == 'nt'
+
+
+def has_admin_privileges() -> bool:
+    try:
+        if is_windows():
+            import ctypes
+            return ctypes.windll.shell32.IsUserAnAdmin() != 0
+        else:
+            return os.geteuid() == 0
+    except Exception:
+        return False
+
 
 def main():
     # Get the project root directory
@@ -15,6 +32,18 @@ def main():
     
     print("🚀 Starting Encrypted Traffic Analysis Dashboard...")
     print("=" * 60)
+    
+    # Enforce elevated privileges for live capture reliability
+    if not has_admin_privileges():
+        if is_windows():
+            print("❌ Error: Administrator privileges are required.")
+            print("   Please open PowerShell as Administrator and run:")
+            print("   > python dashboard/start_dashboard.py")
+        else:
+            print("❌ Error: Root privileges are required.")
+            print("   Please start with sudo to enable live capture:")
+            print("   > sudo -E python dashboard/start_dashboard.py")
+        sys.exit(1)
     
     # Check if we're in the right directory
     if not (project_root / "config.yaml").exists():
@@ -54,7 +83,7 @@ def main():
     print("📍 Press Ctrl+C to stop the server")
     print("=" * 60)
     
-    # Start the Flask app
+    # Start the Flask app as the venv Python (inherits current privileges)
     try:
         subprocess.run([
             str(venv_python), "dashboard/backend/app.py"
@@ -64,6 +93,7 @@ def main():
     except Exception as e:
         print(f"\n❌ Error starting dashboard: {e}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     main()

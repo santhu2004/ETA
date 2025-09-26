@@ -15,6 +15,26 @@ from pathlib import Path
 from flask import Flask, render_template, jsonify, request, send_file
 from flask_cors import CORS
 import yaml
+import shutil
+import platform
+
+# Helper: platform/admin detection
+def _is_windows() -> bool:
+    return os.name == 'nt'
+
+def _is_posix() -> bool:
+    return os.name == 'posix'
+
+def _has_admin_privileges() -> bool:
+    try:
+        if _is_windows():
+            import ctypes
+            return ctypes.windll.shell32.IsUserAnAdmin() != 0
+        if _is_posix():
+            return os.geteuid() == 0
+    except Exception:
+        return False
+    return False
 
 # Add the project root to the Python path
 project_root = Path(__file__).parent.parent.parent
@@ -38,11 +58,13 @@ CORS(app)
 capture_process = None
 capture_status = {"running": False, "packets": 0, "flagged": 0, "start_time": None}
 
+
 def load_config():
     """Load configuration from config.yaml"""
     config_path = project_root / "config.yaml"
     with open(config_path, "r", encoding="utf-8") as f:
         return yaml.safe_load(f)
+
 
 def get_python_cmd():
     """Get the correct Python command with virtual environment"""
@@ -50,6 +72,7 @@ def get_python_cmd():
     if venv_python.exists():
         return str(venv_python)
     return "python"
+
 
 def run_cli_command(cmd_args, use_sudo=False):
     """Run CLI command and return output"""
@@ -80,10 +103,12 @@ def run_cli_command(cmd_args, use_sudo=False):
     except Exception as e:
         return {"success": False, "error": str(e)}
 
+
 @app.route('/')
 def index():
     """Serve the main dashboard page"""
     return render_template('index.html')
+
 
 @app.route('/api/status')
 def get_status():
@@ -111,6 +136,7 @@ def get_status():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/capture/start', methods=['POST'])
 def start_capture():
     """Start live traffic capture"""
@@ -120,17 +146,109 @@ def start_capture():
         return jsonify({"error": "Capture is already running"}), 400
     
     try:
-        # Start capture in background
+        # Ensure dashboard outputs directory exists for logs
+        outputs_dir = dashboard_dir / 'outputs'
+        outputs_dir.mkdir(parents=True, exist_ok=True)
+        stdout_path = outputs_dir / 'live_capture.log'
+        stderr_path = outputs_dir / 'live_capture.err'
+
+        # Build command according to platform/privileges
         python_cmd = get_python_cmd()
-        cmd = ["sudo", "-E", "env", "PATH=" + os.environ.get("PATH", ""), python_cmd, "-m", "cli.main", "capture"]
+        base_cmd = [python_cmd, "-m", "cli.main", "capture"]
+        
+        stdin_spec = subprocess.DEVNULL
+        pre_write_password = None
+        
+        if _is_windows():
+            # On Windows, do not attempt sudo; require Admin privileges
+            cmd = base_cmd
+            if not _has_admin_privileges():
+                return jsonify({
+                    "error": (
+                        "Live capture requires Administrator privileges on Windows. "
+                        "Please start the dashboard from an elevated PowerShell (Run as Administrator). "
+                        "Also ensure Npcap is installed with WinPcap API compatibility."
+                    )
+                }), 500
+        else:
+            # POSIX (Linux/macOS): ALWAYS elevate for live capture unless already root
+            if _has_admin_privileges():
+                cmd = base_cmd
+            else:
+                sudo_cmd = shutil.which('sudo')
+                if not sudo_cmd:
+                    return jsonify({
+                        "error": (
+                            "Live capture requires elevated privileges and 'sudo' was not found. "
+                            "Run the dashboard as root or grant CAP_NET_RAW to Python."
+                        )
+                    }), 500
+                # Prefer sudo -S with password from env if provided; otherwise, try non-interactive -n
+                sudo_password = os.environ.get('ETA_SUDO_PASSWORD')
+                if sudo_password:
+                    cmd = [sudo_cmd, "-S", "-E", "-p", "", "env", "PATH=" + os.environ.get("PATH", "")] + base_cmd
+                    stdin_spec = subprocess.PIPE
+                    pre_write_password = sudo_password + "\n"
+                else:
+                    cmd = [sudo_cmd, "-n", "-E", "env", "PATH=" + os.environ.get("PATH", "")] + base_cmd
+        
+        # Open log files and start process without piping to avoid deadlocks
+        stdout_f = open(stdout_path, 'a')
+        stderr_f = open(stderr_path, 'a')
         
         capture_process = subprocess.Popen(
             cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            stdout=stdout_f,
+            stderr=stderr_f,
+            stdin=stdin_spec,
             text=True,
             cwd=str(project_root)
         )
+        
+        # If we need to send sudo password, write it immediately then close stdin
+        if pre_write_password is not None and capture_process.stdin:
+            try:
+                capture_process.stdin.write(pre_write_password)
+                capture_process.stdin.flush()
+            finally:
+                try:
+                    capture_process.stdin.close()
+                except Exception:
+                    pass
+
+        # Brief health check: if process exited immediately (e.g., sudo needs password or missing deps)
+        time.sleep(0.5)
+        if capture_process.poll() is not None and capture_process.returncode is not None and capture_process.returncode != 0:
+            try:
+                err_msg = ''
+                if stderr_path.exists():
+                    with open(stderr_path, 'r', encoding='utf-8', errors='ignore') as ef:
+                        lines = ef.readlines()
+                        err_msg = ''.join(lines[-50:])
+            except Exception:
+                err_msg = ''
+
+            guidance = []
+            if _is_windows():
+                guidance.append("Run the dashboard from an elevated PowerShell (Run as Administrator).")
+                guidance.append("Install Npcap with WinPcap API compatibility: https://npcap.com/")
+            else:
+                if not _has_admin_privileges():
+                    if os.environ.get('ETA_SUDO_PASSWORD') is None:
+                        guidance.append("Set ETA_SUDO_PASSWORD environment variable for the dashboard process to allow non-interactive sudo.")
+                        guidance.append("Example: ETA_SUDO_PASSWORD=yourpassword venv/bin/python dashboard/backend/app.py")
+                        guidance.append("Alternatively, configure passwordless sudo for this command, or run the dashboard as root.")
+                guidance.append("Grant capabilities to Python to allow raw sockets without sudo (optional):")
+                guidance.append("  sudo setcap cap_net_raw,cap_net_admin+eip $(readlink -f venv/bin/python)")
+                guidance.append("For PyShark, ensure 'dumpcap' has required capabilities: sudo setcap cap_net_raw,cap_net_admin+eip $(which dumpcap)")
+
+            capture_status = {"running": False, "packets": 0, "flagged": 0, "start_time": None}
+            return jsonify({
+                "error": (
+                    f"Live capture failed to start (code {capture_process.returncode}). "
+                    f"{err_msg}\n" + "\n".join(guidance)
+                )
+            }), 500
         
         capture_status = {
             "running": True,
@@ -140,8 +258,11 @@ def start_capture():
         }
         
         return jsonify({"success": True, "message": "Capture started"})
+    except subprocess.CalledProcessError as e:
+        return jsonify({"error": f"Failed to start capture: {e}"}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/capture/stop', methods=['POST'])
 def stop_capture():
@@ -164,6 +285,7 @@ def stop_capture():
         return jsonify({"success": True, "message": "Capture stopped"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/capture/replay', methods=['POST'])
 def start_replay():
@@ -188,6 +310,7 @@ def start_replay():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/logs')
 def get_logs():
     """Get recent detection logs"""
@@ -200,6 +323,7 @@ def get_logs():
         return jsonify(logs[-100:][::-1])
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/stats')
 def get_stats():
@@ -235,6 +359,7 @@ def get_stats():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/blocks')
 def get_blocks():
     """Get list of blocked IPs"""
@@ -250,6 +375,7 @@ def get_blocks():
         return jsonify(blocks)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/unblock', methods=['POST'])
 def unblock_ip():
@@ -269,6 +395,7 @@ def unblock_ip():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/clear-logs', methods=['POST'])
 def clear_logs():
     """Clear all logs"""
@@ -280,6 +407,7 @@ def clear_logs():
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 @app.route('/api/export', methods=['POST'])
 def export_data():
@@ -301,6 +429,7 @@ def export_data():
         })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
+
 
 if __name__ == '__main__':
     # Ensure output directories exist

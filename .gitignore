@@ -254,3 +254,21 @@ local_settings.py
 .env.development
 .env.test
 .env.production
+
+# Project-specific exclusions
+outputs/
+venv/
+*.log
+test_*.py
+demo_*.py
+
+# Dashboard specific
+dashboard/__pycache__/
+dashboard/backend/__pycache__/
+dashboard/frontend/__pycache__/
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db

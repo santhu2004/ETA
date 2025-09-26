@@ -1,7 +1,7 @@
 # Encrypted Traffic Analysis Configuration
 
 # Network interface for packet capture
-interface: Wi-Fi  # auto, eth0, wlan0, etc.
+interface: eth0  # auto, eth0, wlan0, etc.
 
 # Block duration in seconds
 block_duration_seconds: 300

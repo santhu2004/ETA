@@ -495,8 +495,8 @@ class TrafficAnalysisDashboard {
         
         if (detections.length === 0) {
             this.recentDetections.innerHTML = `
-                <div class="text-muted text-center py-4">
-                    <i class="fas fa-search fa-2x mb-3"></i>
+                <div class="text-slate-400 text-center py-4">
+                    <i data-lucide="search" class="mb-2"></i>
                     <p>No detections yet</p>
                 </div>
             `;
@@ -504,24 +504,25 @@ class TrafficAnalysisDashboard {
         }
 
         this.recentDetections.innerHTML = detections.map(detection => `
-            <div class="detection-item ${detection.confidence || 'low-confidence'}">
+            <div class="detection-item border-b border-slate-700/30 py-3 px-3">
                 <div class="d-flex justify-content-between align-items-start">
                     <div>
-                        <strong>${detection.src_ip}</strong>
-                        <span class="text-muted">→ ${detection.dst_ip || 'Unknown'}</span>
+                        <strong class="text-slate-200">${detection.src_ip}</strong>
+                        <span class="text-slate-400">→ ${detection.dst_ip || 'Unknown'}</span>
                     </div>
-                    <span class="badge bg-${this.getConfidenceColor(detection.confidence)}">
-                        ${detection.confidence || 'low'}
-                    </span>
+                    <span class="badge bg-${this.getConfidenceColor(detection.confidence)}">${detection.confidence || 'low'}</span>
                 </div>
-                <div class="mt-2">
-                    <strong>${detection.indicator}</strong>: ${detection.reason}
+                <div class="mt-2 text-slate-300">
+                    <strong class="text-fuchsia-300">${detection.indicator}</strong>: ${detection.reason}
                 </div>
-                <div class="text-muted small mt-1">
+                <div class="text-slate-500 small mt-1">
                     ${this.formatTimestamp(detection.timestamp)}
                 </div>
             </div>
         `).join('');
+        if (window.lucide && lucide.createIcons) {
+            lucide.createIcons();
+        }
     }
 
     displayBlockedIPs(blocks) {
@@ -579,7 +580,8 @@ class TrafficAnalysisDashboard {
         
         const timestamp = new Date().toLocaleTimeString();
         const packetElement = document.createElement('div');
-        packetElement.className = `packet-item ${type}`;
+        const colorClass = type === 'danger' ? 'text-rose-300' : type === 'warning' ? 'text-amber-300' : 'text-slate-300';
+        packetElement.className = `packet-item ${colorClass} border-b border-slate-700/30 font-mono py-2 px-3`;
         packetElement.innerHTML = `
             <div class="d-flex justify-content-between">
                 <span><strong>${src}</strong>: ${message}</span>

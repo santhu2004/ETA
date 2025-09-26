@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Encrypted Traffic Analysis</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons (shadcn uses Lucide) -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* Subtle animated grid backdrop */
+        .gradient-grid {
+            position: absolute;
+            inset: 0;
+            background-image: radial-gradient(circle at 25px 25px, rgba(148,163,184,0.07) 2%, transparent 0%),
+                              radial-gradient(circle at 75px 75px, rgba(148,163,184,0.06) 2%, transparent 0%);
+            background-size: 100px 100px;
+            pointer-events: none;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(148, 163, 184, 0.15);
+            border-radius: 0.75rem;
+        }
+        .brand-gradient {
+            background: linear-gradient(90deg, #22d3ee 0%, #a78bfa 35%, #f472b6 100%);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            filter: drop-shadow(0 0 20px rgba(167,139,250,0.25));
+        }
+        .glow-ring {
+            box-shadow: 0 0 0 2px rgba(167,139,250,0.25), 0 0 60px rgba(56,189,248,0.25) inset;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen relative overflow-x-hidden">
+    <div class="gradient-grid"></div>
+
+    <!-- Navbar -->
+    <header class="relative z-10">
+        <div class="mx-auto max-w-7xl px-6 py-5 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <i data-lucide="shield" class="text-fuchsia-300"></i>
+                <span class="text-lg font-semibold tracking-wide">Encrypted Traffic Analysis</span>
+            </div>
+            <a href="/dashboard" class="text-cyan-300/80 hover:text-cyan-200 transition">Dashboard</a>
+        </div>
+    </header>
+
+    <!-- Hero -->
+    <section class="relative z-10">
+        <div class="mx-auto max-w-7xl px-6 pt-6 pb-4 grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+            <div>
+                <h1 class="text-4xl md:text-6xl font-extrabold leading-tight brand-gradient">
+                    Monitor. Detect. Mitigate.
+                </h1>
+                <p class="mt-4 text-slate-300 text-lg leading-relaxed">
+                    A modern platform for encrypted traffic visibility and automated threat response.
+                    Real-time live capture, high-fidelity analysis indicators, and one-click mitigation.
+                </p>
+
+                <!-- Mode Selector -->
+                <div class="mt-8 glass-panel p-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <i data-lucide="radio" class="text-cyan-300"></i>
+                            <div>
+                                <div class="text-sm text-slate-400">Select Mode</div>
+                                <div id="mode-label" class="font-semibold">Simulation</div>
+                            </div>
+                        </div>
+                        <label class="inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="modeToggle" class="sr-only peer" />
+                            <div class="w-14 h-8 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:ml-1 after:mt-1 after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-emerald-500 relative"></div>
+                        </label>
+                    </div>
+                    <p id="elevation-note" class="mt-3 hidden text-amber-300 text-sm">
+                        <i data-lucide="lock" class="inline h-4 w-4 mr-1"></i>
+                        Live capture requires elevated privileges (sudo/Administrator).
+                    </p>
+                    <div class="mt-4 flex flex-wrap gap-3">
+                        <button id="continueBtn" class="px-5 py-2.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-900 font-semibold transition glow-ring">
+                            Continue to Dashboard
+                        </button>
+                        <a href="/dashboard" class="px-5 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold transition">
+                            Open Default View
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual panel -->
+            <div class="relative">
+                <div class="absolute -inset-6 bg-gradient-to-br from-fuchsia-500/10 via-cyan-400/10 to-transparent rounded-2xl blur-2xl"></div>
+                <div class="relative glass-panel p-6">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="activity" class="text-cyan-300"></i>
+                                <div class="font-semibold">Live Capture</div>
+                            </div>
+                            <p class="mt-2 text-sm text-slate-400">Real-time TLS/SSL flow inspection
+                                with packet metadata extraction.</p>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="beaker" class="text-violet-300"></i>
+                                <div class="font-semibold">Simulation</div>
+                            </div>
+                            <p class="mt-2 text-sm text-slate-400">Replay synthetic flows for demos,
+                                testing, and offline experimentation.</p>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="shield-alert" class="text-rose-300"></i>
+                                <div class="font-semibold">Detections</div>
+                            </div>
+                            <p class="mt-2 text-sm text-slate-400">Rule-based indicators: bad IPs, JA3,
+                                certificate anomalies, suspicious domains.</p>
+                        </div>
+                        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+                            <div class="flex items-center gap-3">
+                                <i data-lucide="ban" class="text-emerald-300"></i>
+                                <div class="font-semibold">Mitigation</div>
+                            </div>
+                            <p class="mt-2 text-sm text-slate-400">Automated IP blocking with configurable
+                                durations and exportable state.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Capabilities Grid -->
+    <section class="relative z-10 mt-10">
+        <div class="mx-auto max-w-7xl px-6">
+            <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                <div class="glass-panel p-5">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="database" class="text-cyan-300"></i>
+                        <h3 class="font-semibold">Persistent Logging</h3>
+                    </div>
+                    <p class="mt-2 text-slate-400">JSONL + SQLite storage, export to JSON/CSV/TXT,
+                        summary statistics, and time-based cleanup.</p>
+                </div>
+                <div class="glass-panel p-5">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="settings" class="text-fuchsia-300"></i>
+                        <h3 class="font-semibold">Configurable Thresholds</h3>
+                    </div>
+                    <p class="mt-2 text-slate-400">Tune detection sensitivity and rules via YAML without
+                        changing code.</p>
+                </div>
+                <div class="glass-panel p-5">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="download" class="text-emerald-300"></i>
+                        <h3 class="font-semibold">Data Export</h3>
+                    </div>
+                    <p class="mt-2 text-slate-400">Export detections and blocks for reporting or
+                        integration with other systems.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer CTA -->
+    <section class="relative z-10 mt-12 mb-10">
+        <div class="mx-auto max-w-7xl px-6">
+            <div class="glass-panel p-6 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i data-lucide="zap" class="text-amber-300"></i>
+                    <div class="font-semibold">Ready to explore encrypted traffic?</div>
+                </div>
+                <div class="flex gap-3">
+                    <button id="ctaLive" class="px-4 py-2 rounded-md bg-emerald-500 hover:bg-emerald-400 text-slate-900 font-semibold transition">
+                        Live Mode
+                    </button>
+                    <button id="ctaSim" class="px-4 py-2 rounded-md bg-violet-500 hover:bg-violet-400 text-slate-900 font-semibold transition">
+                        Simulation
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // Initialize lucide icons
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.lucide && lucide.createIcons) {
+                lucide.createIcons();
+            }
+        });
+
+        (function(){
+            const toggle = document.getElementById('modeToggle');
+            const label = document.getElementById('mode-label');
+            const note = document.getElementById('elevation-note');
+            const btn = document.getElementById('continueBtn');
+            const ctaLive = document.getElementById('ctaLive');
+            const ctaSim = document.getElementById('ctaSim');
+
+            function updateUI(){
+                const live = toggle.checked;
+                label.textContent = live ? 'Live Capture' : 'Simulation';
+                note.classList.toggle('hidden', !live);
+            }
+
+            toggle.addEventListener('change', updateUI);
+            updateUI();
+
+            btn.addEventListener('click', function(){
+                const mode = toggle.checked ? 'live' : 'simulation';
+                window.location.href = '/dashboard?mode=' + encodeURIComponent(mode);
+            });
+
+            ctaLive.addEventListener('click', function(){
+                window.location.href = '/dashboard?mode=live';
+            });
+            ctaSim.addEventListener('click', function(){
+                window.location.href = '/dashboard?mode=simulation';
+            });
+        })();
+    </script>
+</body>
+</html> 

@@ -6,12 +6,23 @@ class TrafficAnalysisDashboard {
         this.updateInterval = null;
         this.packetFeed = null;
         this.recentDetections = null;
+        this.mode = this.getModeFromUrl();
         
         // Wait for DOM to be ready
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', () => this.init());
         } else {
             this.init();
+        }
+    }
+
+    getModeFromUrl() {
+        try {
+            const params = new URLSearchParams(window.location.search);
+            const mode = params.get('mode');
+            return (mode === 'live' || mode === 'simulation') ? mode : 'simulation';
+        } catch (e) {
+            return 'simulation';
         }
     }
 
@@ -29,6 +40,25 @@ class TrafficAnalysisDashboard {
         this.loadInitialData();
         this.startPeriodicUpdates();
         console.log('Dashboard initialized successfully');
+
+        // Update start button to reflect desired mode default
+        const startBtn = document.getElementById('start-capture');
+        if (startBtn) {
+            if (this.mode === 'live') {
+                startBtn.innerHTML = '<i class="fas fa-play"></i> Start Live Capture';
+            } else {
+                startBtn.innerHTML = '<i class="fas fa-play"></i> Run Replay';
+            }
+        }
+
+        // Mode-specific UI: show/hide controls and center detections
+        this.applyModeLayout();
+
+        // Reflect mode in System Information
+        const sysMode = document.getElementById('system-mode');
+        if (sysMode) {
+            sysMode.textContent = (this.mode === 'live') ? 'Live' : 'Simulation';
+        }
     }
 
     initializeEventListeners() {
@@ -43,7 +73,11 @@ class TrafficAnalysisDashboard {
         if (startBtn) startBtn.addEventListener('click', (e) => {
             e.preventDefault();
             console.log('Start capture clicked');
-            this.startCapture();
+            if (this.mode === 'live') {
+                this.startCapture();
+            } else {
+                this.startReplay();
+            }
         });
         
         if (stopBtn) stopBtn.addEventListener('click', (e) => {
@@ -112,7 +146,8 @@ class TrafficAnalysisDashboard {
         this.updateInterval = setInterval(() => {
             this.loadStatus();
             this.loadStats();
-            if (this.captureRunning) {
+            // Always refresh logs while running live; in simulation, refresh for a short period after triggering
+            if (this.captureRunning || this.mode === 'simulation') {
                 this.loadLogs();
             }
         }, 2000);
@@ -397,14 +432,60 @@ class TrafficAnalysisDashboard {
         if (startBtn && stopBtn) {
             if (running) {
                 startBtn.disabled = true;
-                stopBtn.disabled = false;
+                stopBtn.disabled = (this.mode !== 'live');
                 startBtn.innerHTML = '<i class="fas fa-play"></i> Capture Running...';
                 stopBtn.innerHTML = '<i class="fas fa-stop"></i> Stop Capture';
             } else {
                 startBtn.disabled = false;
                 stopBtn.disabled = true;
-                startBtn.innerHTML = '<i class="fas fa-play"></i> Start Live Capture';
+                if (this.mode === 'live') {
+                    startBtn.innerHTML = '<i class="fas fa-play"></i> Start Live Capture';
+                } else {
+                    startBtn.innerHTML = '<i class="fas fa-play"></i> Run Replay';
+                }
                 stopBtn.innerHTML = '<i class="fas fa-stop"></i> Stop Capture';
+            }
+        }
+    }
+
+    applyModeLayout() {
+        const startBtn = document.getElementById('start-capture');
+        const stopBtn = document.getElementById('stop-capture');
+        const replayBtn = document.getElementById('replay-capture');
+        const clearBtn = document.getElementById('clear-logs');
+        const liveFeedCol = document.getElementById('live-feed-col');
+        const recentCol = document.getElementById('recent-detections-col');
+
+        if (this.mode === 'live') {
+            // Show only Start Live, Stop, Clear Logs
+            if (startBtn) startBtn.style.display = '';
+            if (stopBtn) stopBtn.style.display = '';
+            if (clearBtn) clearBtn.style.display = '';
+            if (replayBtn) replayBtn.style.display = 'none';
+
+            // Keep live feed visible, keep layout as 8/4
+            if (liveFeedCol) liveFeedCol.style.display = '';
+            if (recentCol) {
+                recentCol.classList.remove('col-md-12');
+                recentCol.classList.remove('offset-md-0');
+                recentCol.classList.remove('col-lg-6');
+                recentCol.classList.remove('offset-lg-3');
+                recentCol.classList.add('col-md-4');
+            }
+        } else {
+            // Simulation: Show only Run Simulation and Clear Logs
+            if (startBtn) startBtn.style.display = 'none';
+            if (stopBtn) stopBtn.style.display = 'none';
+            if (clearBtn) clearBtn.style.display = '';
+            if (replayBtn) replayBtn.style.display = '';
+
+            // Hide live feed, center recent detections
+            if (liveFeedCol) liveFeedCol.style.display = 'none';
+            if (recentCol) {
+                recentCol.classList.remove('col-md-4');
+                recentCol.classList.add('col-md-12');
+                recentCol.classList.add('col-lg-6');
+                recentCol.classList.add('offset-lg-3');
             }
         }
     }

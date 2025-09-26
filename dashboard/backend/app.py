@@ -106,7 +106,14 @@ def run_cli_command(cmd_args, use_sudo=False):
 
 @app.route('/')
 def index():
-    """Serve the main dashboard page"""
+    """Serve the landing page"""
+    return render_template('landing.html')
+
+
+@app.route('/dashboard')
+def dashboard_page():
+    """Serve the main dashboard page (respects ?mode=live|simulation)"""
+    # The JS will read mode from URL if needed; we just render the page
     return render_template('index.html')
 
 
@@ -400,11 +407,10 @@ def unblock_ip():
 def clear_logs():
     """Clear all logs"""
     try:
-        result = run_cli_command(["clear-logs"])
-        return jsonify({
-            "success": result["success"],
-            "message": result["stdout"] if result["success"] else result["stderr"]
-        })
+        cfg = load_config()
+        logger = EventLogger(cfg["paths"]["logs_dir"])
+        logger.clear_logs()
+        return jsonify({"success": True, "message": "All logs cleared"})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 

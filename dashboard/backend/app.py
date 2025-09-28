@@ -68,7 +68,10 @@ def load_config():
 
 def get_python_cmd():
     """Get the correct Python command with virtual environment"""
-    venv_python = project_root / "venv" / "bin" / "python"
+    if _is_windows():
+        venv_python = project_root / "venv" / "Scripts" / "python.exe"
+    else:
+        venv_python = project_root / "venv" / "bin" / "python"
     if venv_python.exists():
         return str(venv_python)
     return "python"

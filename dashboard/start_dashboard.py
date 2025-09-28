@@ -52,7 +52,10 @@ def main():
         sys.exit(1)
     
     # Check if virtual environment exists
-    venv_python = project_root / "venv" / "bin" / "python"
+    if is_windows():
+        venv_python = project_root / "venv" / "Scripts" / "python.exe"
+    else:
+        venv_python = project_root / "venv" / "bin" / "python"
     if not venv_python.exists():
         print("❌ Error: Virtual environment not found. Please run install.sh first.")
         print(f"   Expected venv at: {venv_python}")
